@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>SENG 513 chatroom</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <style>
+            * { margin: 2px; padding: 2px; box-sizing: border-box; }
+            body { font: 13px Helvetica, Arial; }
+            form {
+                background: lavender;
+                padding: 3px;
+                position: fixed;
+                bottom: 0px;
+                width: 90%;
+                margin-bottom: 10px;
+                margin-top: auto;
+                margin-left: 0px;
+                margin-right: auto;
+                border: plum 2px solid;
+            }
+            form input { border: 0; padding: 5px; width: 80%; margin: 5px; }
+            form button { width: 10%; background: rgb(130, 224, 255); border: none; padding: 5px; }
+
+            #messages { list-style-type: none; margin: 0; padding: 0; }
+            #messages li { padding: 5px 10px; }
+            #username {
+                padding: 10px;
+                background-color: lavender;
+                min-height: 35px;
+                text-align: center;
+            }
+            #com {
+                background-color: thistle;
+                min-height: 25px;
+                color: red;
+                text-align: center;
+            }
+            #messagearea {
+                width: 80%;
+                height: auto;
+                float: left;
+                border: plum 4px solid;
+                margin-bottom: 55px;
+            }
+            #messagebox {
+                margin: auto;
+                overflow: none;
+                position: relative;
+                width: auto;
+                min-height: 300px;
+                max-height:95%;
+                border: plum 2px solid;
+            }
+            #messages {
+                list-style-type: none;
+                overflow:auto;
+                position: absolute;
+                width: 100%;
+                bottom: 0;
+                max-height: 100%;
+            }
+            #userbox {
+                margin-right: 2px;
+                margin-left: auto;
+                text-align: center;
+            }
+
+
+        </style>
+    </head>
+    <body>
+        <div id="messagearea">
+            <p id="username"> <b>Your are: </b><span id="userID"></span></p>
+            <p id="com"></p>
+            <div id="messagebox">
+                <ul id="messages"></ul>
+                <form action="">
+                    <input id="m" autocomplete="off" /><button>Send</button>
+                </form>
+            </div>
+        </div>
+        <div id="userbox">
+            <h3>Users in chat</h3>
+            <br>
+            <ul id="users"></ul>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+           <script type="text/javascript">
+                window.onbeforeunload = function() {
+                }
+            </script>
+        <script>
+            $(function () {
+                var socket = io(); // connects to host that serves the page by default
+
+                if (document.cookie.indexOf("vivitedSeng513Chat=") >=0) {
+                    alert("hello again");
+                }
+
+                localStorage = window.localStorage;
+                document.cookie = 'foo=bar; max-age=3600'
+
+                /*for (i=0; i<localStorage.length; i++){
+                    localStorage.clear();
+                }*/
+
+                socket.on('new connection', function(nickname) {
+                    $('#userID').text(nickname);
+                    for (i=0; i<localStorage.length; i++){
+                        $('#messages').append($('<li>').html(localStorage[i]));
+                    }
+                });
+
+                socket.on('changed user list', function(list) {
+                    //$('#users').append($('<li>').text(nickname));
+                    //$('#users').text(list);
+                    $('#users').text(" ");
+                    for (i=0; i<list.length; i++) {
+                        $('#users').append($('<li>').text(list[i]));
+                    }
+                });
+
+                socket.on('nickname not unique', function(nickname) {
+                    $('#com').text("Sorry, " + nickname + " is not unique.");
+                });
+
+                socket.on('nickname unique', function(nickname) {
+                    $('#userID').text(nickname);
+                    $('#com').text(" ");
+                });
+
+                socket.on('colour not valid', function(colour) {
+                    $('#com').text("Sorry, " + colour + " is not a valid colour. Please follow this format: RRGGBB (eg: 00FF00)");
+                });
+
+                socket.on('valid colour', function() {
+                    $('#com').text(" ");
+                });
+
+                $('form').submit(function(e){
+                    e.preventDefault(); // prevents page reloading
+                    socket.emit('chat message', $('#m').val());
+                    $('#m').val('');
+                    return false;
+                });
+
+                socket.on('check storage', function() {
+                    socket.emit('storage length', localStorage.length);
+                });
+
+                // If more than 400 messages have been stored, keep the last 200, restart incrementing from there
+                socket.on('renew localStorage', function() {
+                    console.log(" renewing storage");
+                    for (i=5; i<localStorage.length; i++){
+                        console.log("oldest mssg we're keeping: " + localStorage[i] + " at index "+ i);
+                        //localStorage[i-5] = localStorage[i];
+                        localStorage.setItem(i-5,localStorage[i]);
+                        console.log("now item at index " + (i-5) + " is " + localStorage[i-5]);
+                    }
+                    for (i=11; i<localStorage.length; i++){
+                        console.log("removing: " + localStorage[i] +  " at index " + i);
+                        localStorage.removeItem(i);
+                    }
+                    socket.emit('storage length', 10);
+                });
+
+                socket.on('chat message', function(msg, timeSent, user, colour, sender, mssgCount){
+                    // Format timestamp
+                    let time = new Date (timeSent);
+                    let minutes = time.getMinutes().toString();
+                    while (minutes.length < 2) {
+                        minutes = "0" + minutes;
+                    }
+                    let timeStamp = time.getHours() + ":" + minutes;
+                    // Make message string
+                    let displayStr = timeStamp + " - "  + "<span style= 'color:#" + colour + ";'>" + user + "</span>" + ":  " + msg;
+                    localStorage.setItem(mssgCount,displayStr);
+                    console.log(localStorage);
+                    for (i=0; i<localStorage.length; i++){
+                        console.log(localStorage[i]);
+                    }
+                    console.log(displayStr);
+                    // If message sender is this client, make message bold
+                    if (sender === socket.id) {
+                        $('#messages').append($('<li>').html(displayStr.bold()));
+                        //https://stackoverflow.com/questions/3006900/align-text-with-bottom-as-it-comes-in-during-a-chat
+                        $('#messages').scrollTop($('#messages')[0].scrollHeight);
+                    }
+                    else {
+                        $('#messages').append($('<li>').html(displayStr));
+                        $('#messages').scrollTop($('#messages')[0].scrollHeight);
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>
