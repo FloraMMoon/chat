@@ -62,6 +62,8 @@
                 margin-left: auto;
                 text-align: center;
             }
+            #userbox li { list-style-type: none; margin: 0; padding: 0; }
+
         </style>
     </head>
     <body>
@@ -96,7 +98,7 @@
                 if (document.cookie.indexOf("user=") >=0) {
                     let cookieValue = document.cookie.split(';')[0].split('=')[1];
                     socket.emit('returning user', cookieValue);
-                    alert("Welcome back, " + cookieValue);
+                    //alert("Welcome back, " + cookieValue);
                 }
                 // if no cookie, tell the server
                 else {
@@ -123,6 +125,10 @@
 
                 socket.on('nickname not unique', function(nickname) {
                     $('#com').text("Sorry, " + nickname + " is not unique.");
+                });
+
+                socket.on('nickname changed', function(nickname) {
+                    $('#com').text("You were assigned a new nickname because your old one was taken.");
                 });
 
                 socket.on('nickname unique', function(nickname) {

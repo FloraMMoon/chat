@@ -25,12 +25,21 @@ io.on('connection', function(socket) {
     // Client is a returning user
     socket.on('returning user', function(nickname) {
         userId = nickname;
+        while (userList.includes(userId)) {
+            totalConnections += 1;
+            userId = "User"+totalConnections;
+            io.to(`${socket.id}`).emit('nickname changed');
+        }
         userJoin (socket, userId)
     });
 
     // Client is a new user
     socket.on('new user', function() {
         userId = "User"+totalConnections;
+        while (userList.includes(userId)) {
+            totalConnections += 1;
+            userId = "User"+totalConnections;
+        }
         userJoin (socket, userId)
     });
 
