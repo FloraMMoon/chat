@@ -24,13 +24,15 @@ io.on('connection', function(socket) {
 
     // Client is a returning user
     socket.on('returning user', function(nickname) {
-        userId = nickname;
-        while (userList.includes(userId)) {
-            totalConnections += 1;
-            userId = "User"+totalConnections;
-            io.to(`${socket.id}`).emit('nickname changed');
+        console.log("User " + nickname + " returning on socket: " + socket);
+        if (userList.includes(nickname)) {
+            io.to(`${socket.id}`).emit('same user');
+            socket.disconnect();
         }
-        userJoin (socket, userId)
+        else {
+            userId = nickname;
+            userJoin (socket, userId)
+        }
     });
 
     // Client is a new user
@@ -40,6 +42,7 @@ io.on('connection', function(socket) {
             totalConnections += 1;
             userId = "User"+totalConnections;
         }
+        console.log("Brand new user: " + userId );
         userJoin (socket, userId)
     });
 

@@ -93,10 +93,12 @@
             $(function () {
                 var socket = io(); // connects to host that serves the page by default
 
+                console.log("CONNECTING ");
                 // Check if user has a cookie
                 // if cookie exists, send old username to server
                 if (document.cookie.indexOf("user=") >=0) {
                     let cookieValue = document.cookie.split(';')[0].split('=')[1];
+                    console.log("Cookies: " + document.cookie);
                     socket.emit('returning user', cookieValue);
                     //alert("Welcome back, " + cookieValue);
                 }
@@ -139,6 +141,10 @@
 
                 socket.on('colour not valid', function(colour) {
                     $('#com').text("Sorry, " + colour + " is not a valid colour. Please follow this format: RRGGBB (eg: 00FF00)");
+                });
+
+                socket.on('same user', function() {
+                    $('#com').text("You cannot connect in multiple tabs. Please clear your cookies before reconnecting.");
                 });
 
                 socket.on('valid colour', function() {
